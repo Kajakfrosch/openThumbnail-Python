@@ -13,7 +13,7 @@
 2. **Python**: Version 3.9 oder höher
 3. **CouchDB**: Version 3.x oder höher. Stelle sicher, dass CouchDB vollständig installiert und lauffähig ist.
 4. **Weitere Abhängigkeiten**:
-    - Libraries: Flask, couchdb, requests, Pillow (PIL)
+    - Libraries: Flask, couchdb, requests, Pillow (PIL) siehe requirements.txt
     - Python-Paketmanager: `pip`
 
 ## **Netzwerkanforderungen**
@@ -73,7 +73,7 @@ curl http://127.0.0.1:5984/
 ```
 1. **Abhängigkeiten installieren**:
 ``` bash
-   pip install Flask couchdb requests Pillow
+      pip install -r requirements.txt
 ```
 ### **3. Konfigurationsdatei anpassen**
 In der `config.json` stehen alle benötigten Parameter:
@@ -170,3 +170,104 @@ sudo systemctl start couchdb
 ``` bash
 curl http://127.0.0.1:5984/documents_db/_all_docs?include_docs=true > backup.json
 ```
+
+### Optionale Optimierungen 
+### **Gunicorn Installation**
+Stelle sicher, dass du Python und `pip` auf deinem System installiert hast.
+``` bash
+pip install gunicorn
+```
+**Prüfe die Installation:** Um zu überprüfen, ob Gunicorn korrekt installiert wurde, kannst du diesen Befehl ausführen:
+``` bash
+gunicorn --version
+```
+### 2. **Grundlegende Konfiguration für Gunicorn**
+Angenommen, deine Flask-App liegt in einer Datei mit dem Namen `main.py` und enthält eine Flask-App-Instanz namens `app`.
+Um die Flask-App mit Gunicorn auszuführen, kannst du den folgenden Befehl in deinem Terminal verwenden:
+``` bash
+gunicorn -w 4 -b 0.0.0.0:5000 main:app
+```
+**Parameter-Erklärung:**
+- `-w 4`: Starte die App mit **4 Worker-Prozessen** (passe dies an die Leistung deines Servers an, häufig: `Anzahl der CPU-Kerne × 2 + 1`).
+- `-b 0.0.0.0:5000`: Binde die App an **alle Netzwerk-Interfaces** auf Port `5000`.
+- `main:app`: Hier ist `main` der Name der Python-Datei (ohne `.py`), und `app` ist der Name der Flask-App-Instanz.
+
+### 3. **Dauerhafter Betrieb mit Gunicorn**
+Damit die App dauerhaft (auch nach einem Neustart des Systems) läuft, kannst du Gunicorn mit einem Prozessmanager wie **`systemd`** auf Linux-Systemen oder **`supervisord`** konfigurieren.
+#### **Option 1: systemd (empfohlen für Linux-Server)**
+1. Erstelle eine `systemd`-Dienstdatei:
+``` bash
+   sudo nano /etc/systemd/system/flaskapp.service
+```
+1. Füge den folgenden Inhalt in die Datei ein:
+``` ini
+   [Unit]
+   Description=Gunicorn service for Flask app
+   After=network.target
+
+   [Service]
+   User=dein_benutzername
+   Group=www-data
+   WorkingDirectory=/pfad/zu/deiner/app
+   ExecStart=/pfad/zu/python3 /pfad/zu/python3/bin/gunicorn -w 4 -b 0.0.0.0:5000 main:app
+   Restart=always
+
+   [Install]
+   WantedBy=multi-user.target
+```
+**Erklärung:**
+- Ersetze `/pfad/zu/python3` durch den Pfad deiner Python-Installation.
+- Passe `/pfad/zu/deiner/app` an den Verzeichnispfad deiner Flask-App an.
+- Der Benutzer `dein_benutzername` sollte der Account sein, unter welchem die App laufen soll.
+
+1. **Aktiviere und starte den Dienst:**
+``` bash
+   sudo systemctl daemon-reload
+   sudo systemctl start flaskapp
+   sudo systemctl enable flaskapp
+```
+1. Überprüfen, ob der Dienst läuft:
+``` bash
+   sudo systemctl status flaskapp
+```
+#### **Option 2: Supervisord (für ältere Systeme oder Non-Systemd)**
+Installiere **supervisord**:
+``` bash
+pip install supervisor
+```
+Erstelle eine Config-Datei für dein Flask-Projekt, z. B. `flaskapp.conf`:
+``` ini
+[program:flaskapp]
+command=gunicorn -w 4 -b 0.0.0.0:5000 main:app
+directory=/pfad/zu/deiner/app
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/flaskapp.err.log
+stdout_logfile=/var/log/flaskapp.out.log
+```
+Starte dann supervisord:
+``` bash
+supervisord -c flaskapp.conf
+```
+### 4. **Testing der Gunicorn-Installation**
+Teste die App, indem du den Server mit Gunicorn startest und im Browser auf `http://<server-ip>:5000` navigierst.
+### 5. **Optionale Optimierungen**
+#### Logging aktivieren
+Gunicorn kann konfiguriert werden, um Logs für Fehler und Zugriffe zu generieren:
+``` bash
+gunicorn -w 4 -b 0.0.0.0:5000 --access-logfile access.log --error-logfile error.log main:app
+```
+#### Performance-Parameter anpassen
+Du kannst die Worker-Anzahl (`--workers`) oder die maximale Anzahl von Anfragen pro Worker (`--max-requests`) basierend auf der Last anpassen:
+``` bash
+gunicorn -w 4 --max-requests 1000 -b 0.0.0.0:5000 main:app
+```
+### Zusammenfassung der Schritte
+1. **Installiere Gunicorn** (`pip install gunicorn`).
+2. **Starte den Server mit Gunicorn**:
+``` bash
+   gunicorn -w 4 -b 0.0.0.0:5000 main:app
+```
+1. **Optional: Konfiguriere Hosting auf einem Dauerbetrieb (z. B. systemd oder supervisord)**.
+2. **Teste die App im Browser auf `http://server-ip:5000`.**
+
