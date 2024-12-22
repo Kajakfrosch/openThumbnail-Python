@@ -1,0 +1,10 @@
+{
+  "security_tokens": [
+    "my_secure_token_123",
+    "another_secure_token_456",
+    "additional_token_789"
+  ],
+  "couchdb_server": "http://admin:1012@localhost:5984/",
+  "database_name": "ethumb"
+
+}
