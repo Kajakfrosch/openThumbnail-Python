@@ -127,3 +127,4 @@ Die Datei wird als **Download** bereitgestellt.
 | **Bild nicht akzeptiert** | Bildformat nicht JPEG | Lade ein **JPEG-Bild** hoch. |
 ## **Lizenz**
 
+**Open Thumbnail Python Edition © 2024 by Luis Schumacher is licensed under CC BY-NC-SA 4.0 **
