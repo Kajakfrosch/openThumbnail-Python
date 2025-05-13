@@ -5,7 +5,7 @@ charset-normalizer==3.4.0
 click==8.1.8
 CouchDB==1.2
 exceptiongroup==1.2.2
-Flask==3.1.0
+Flask==3.1.1
 Flask-Admin==2.0.0a3
 Flask-RESTful==0.3.10
 gunicorn==23.0.0
